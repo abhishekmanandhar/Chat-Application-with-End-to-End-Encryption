@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Realtime Chat App | <%= title %></title>
+    <link rel="stylesheet" href="/css/loginstyle.css" />
+  </head>
+  <body>
+    <div class="login-page">
+      <div class="form">
+        <h1>Register</h1>
+        <% if(typeof message !== 'undefined'){ %>
+          <p style="color: black"><%= message %></p>
+          <% } %>
+        <form
+          class="login-form"
+          action=""
+          method="POST"
+          enctype="multipart/form-data"
+        >
+          <input type="text" name="name" placeholder="Enter Name" required />
+          <input type="email" name="email" placeholder="Enter Email" required />
+          <input type="file" name="image" required />
+          <input
+            type="password"
+            name="password"
+            placeholder="Enter Password"
+            required
+          />
+          <button type="submit">Register</button>
+          <p class="message">Already have an account? <a href="/login">Login</a></p>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

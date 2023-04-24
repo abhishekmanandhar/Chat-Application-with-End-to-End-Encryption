@@ -1,0 +1,51 @@
+<!-- Dynamic content and logic of the view can be injected within <% %>(ejs tags) which is given by ejs. Thus the template that we create using this is known as ejs template with .ejs extension-->
+
+<!-- - include in ejs in used to include the partial ejs file for the ejs template. In this case, the header.ejs and footer.ejs in layouts folder are partials -->
+<%- include('layouts/header.ejs') %>
+
+  <!-- = variable inside the ejs tags is used to output the dynamic variable -->
+  <div class="profile-flex-container">
+    <img src="<%= 'http://localhost:3000/'+user.image%>" alt="" class="profile-img">
+    <h2 class="mb-4">
+      <%= user.name%>
+    </h2>
+  </div>
+  <div class="row">
+    <div class="col-md-3">
+      <ul class="list-group">
+        <% if(users.length> 0 ){ for(let i = 0; i< users.length; i++){ %>
+            <li class="list-group-item cursor-pointer user-list each-list-user" data-id="<%= users[i]['_id'] %>">
+              <div class="user-list-flex-container">
+                <img src="<%= 'http://localhost:3000/'+users[i]['image'] %>" alt="" class="profile-img" />
+                <div class="list-user-name">
+                  <%= users[i]['name'] %>
+                </div>
+
+  <!-- user online or offline frontend code! -->
+  <% if(users[i]['is_online']==1){ %>
+                  <div class="online-status" id="<%= users[i]['_id'] %>-status"></div>
+                  <% } else{ %>
+                    <div class="offline-status" id="<%= users[i]['_id'] %>-status"></div>
+                    <% }%>
+              </div>
+            </li>
+            <% } } %>
+      </ul>
+    </div>
+    <div class="col-md-9">
+      <h3 class="start-head">Click to Start the Chat</h3>
+      <div class="chat-section">
+        <div id="chat-container">
+
+        </div>
+        <form action="" id="chat-form">
+          <input type="text" name="message" placeholder="Enter Message" id="message" class="message-width" required />
+          <input type="submit" value="Send" class="btn btn-primary send-width" />
+        </form>
+      </div>
+    </div>
+  </div>
+  </div>
+  </div>
+
+  <%- include('layouts/footer.ejs') %>
