@@ -117,6 +117,14 @@ usp.on('connection', async (socket) => {
     });
 
     socket.on("by-receiver-to-server-invitation-accepted", (data) => {
+
+        const commonRoom = (data.senderId + data.receiverId).split("").sort().join("");
+        socket.join(commonRoom);
+        rooms.push({
+            roomId: commonRoom,
+            users: [data.senderId, data.receiverId],
+        })
+
         usp.to(data.senderId).emit("by-server-to-sender-invitation-accepted", data);
     });
 
@@ -130,8 +138,14 @@ usp.on('connection', async (socket) => {
     socket.broadcast.emit('getOnlineUser', { user_id: userId })
 
     //chatting implementation
-    socket.on('newChat', function (data) {
-        socket.broadcast.emit('loadNewChat', data)
+    socket.on('by-sender-to-server-chat-message', (data) => {
+        const {senderDbId, senderId, receiverDbId, message} = data
+        const invitedUser = getUser(receiverDbId);
+        const receiverId = invitedUser.socketId;
+
+        usp.to(receiverId).emit("by-server-to-receiver-chat-message", {
+            message: message,
+        })
     })
 
     //load old chats

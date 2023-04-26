@@ -82,7 +82,7 @@ socket.on('connect', () => {
     //Receivers' end
     socket.on("by-server-to-receiver-new-invitation", (data) => {
         // console.log(data);
-        
+
         //shared key generate for the receiver
         const { senderId, senderDbId, senderName, senderPbk, receiverId, receiverDbId, receiverName } = data;
         //in receivers' end sender is actually receiver!
@@ -107,7 +107,7 @@ socket.on('connect', () => {
             console.log("Shared key from local storage: " + info.sharedKey);
         }
 
-        if(!sharedKeyInfo){
+        if (!sharedKeyInfo) {
             sharedKey = createSharedKeys(secretKey, senderPbk, globalConstants.p);
             const info = {
                 sender: receiverDbId,
@@ -122,11 +122,11 @@ socket.on('connect', () => {
     //Senders' end
     socket.on("by-server-to-sender-invitation-accepted", (data) => {
         // console.log(data);
-        
+
         //shared key generate for the sender
-        const { senderId, senderDbId, senderName, receiverPbk, receiverId, receiverDbId, receiverName} = data;
+        const { senderId, senderDbId, senderName, receiverPbk, receiverId, receiverDbId, receiverName } = data;
         //in senders' end sender is sender!
-        const combinedName = senderName + '&' + receiverName+ ' key'; //prints the name as sender&receiver
+        const combinedName = senderName + '&' + receiverName + ' key'; //prints the name as sender&receiver
 
 
         const sharedKeyInfo = localStorage.getItem(combinedName);
@@ -137,7 +137,7 @@ socket.on('connect', () => {
             console.log("Shared key from local storage: " + info.sharedKey);
         }
 
-        if(!sharedKeyInfo){
+        if (!sharedKeyInfo) {
             sharedKey = createSharedKeys(secretKey, receiverPbk, globalConstants.p);
             const info = {
                 sender: senderDbId,
@@ -149,120 +149,80 @@ socket.on('connect', () => {
         }
     });
 
+    //get user online status
+    socket.on('getOnlineUser', function (data) {
+        // $('#' + data.user_id + '-status').text('Online');
+        $('#' + data.user_id + '-status').removeClass('offline-status');
+        $('#' + data.user_id + '-status').addClass('online-status');
+    });
+    //get user offline status
+    socket.on('getOfflineUser', function (data) {
+        // $('#' + data.user_id + '-status').text('Offline');
+        $('#' + data.user_id + '-status').addClass('offline-status');
+        $('#' + data.user_id + '-status').removeClass('online-status');
+    });
+
+    //Show chat at senders' side.
+    $('#chat-form').submit(function (event) {
+        event.preventDefault();
+
+        var message = $('#message').val();
+        var encryptedMessage = CryptoJS.AES.encrypt(message, sharedKey.toString()).toString();
+
+        console.log(encryptedMessage);
+
+        $.ajax({
+            url: '/save-chat',
+            type: 'POST',
+            data: { sender_id: sender_id, receiver_id: receiver_id, message: encryptedMessage },
+
+            //when the response is sent from the server
+            success: function (response) {
+                if (response.success) {
+                    // console.log(response.data.message);
+
+                    //empty out the message box
+                    $('#message').val('');
+
+                    let decryptedMessage = CryptoJS.AES.decrypt(response.data.message, sharedKey.toString()).toString(CryptoJS.enc.Utf8);
+
+                    //show the decrypted message in the chat container
+                    let chat = decryptedMessage;
+                    let html = `
+                            <div class="current-user-chat">
+                                <h5>`+ chat + `</h5>
+                            </div>
+                            `;
+                    $('#chat-container').append(html);
+
+
+                    // socket.emit('newChat', response.data);
+                    socket.emit('by-sender-to-server-chat-message', {
+                        senderDbId: sender_id,
+                        senderId: socket.id,
+                        receiverDbId: receiver_id,
+                        message: encryptedMessage,
+                    });
+                } else {
+                    alert(response.msg);
+                }
+            }
+        });
+    });
+
+    //Show chat at receivers' side.
+    socket.on('by-server-to-receiver-chat-message', (data) => {
+        let decryptedMessage = CryptoJS.AES.decrypt(data.message, sharedKey.toString()).toString(CryptoJS.enc.Utf8);
+        let html = `
+                    <div class="distance-user-chat">
+                        <h5>`+ decryptedMessage + `</h5>
+                    </div>
+                    `;
+        $('#chat-container').append(html);
+    });
 });
 
 
-//get user online status
-socket.on('getOnlineUser', function (data) {
-    // $('#' + data.user_id + '-status').text('Online');
-    $('#' + data.user_id + '-status').removeClass('offline-status');
-    $('#' + data.user_id + '-status').addClass('online-status');
-});
-//get user offline status
-socket.on('getOfflineUser', function (data) {
-    // $('#' + data.user_id + '-status').text('Offline');
-    $('#' + data.user_id + '-status').addClass('offline-status');
-    $('#' + data.user_id + '-status').removeClass('online-status');
-});
-
-// ---------------------------------------------------------------
-//Diffie Hellman Key Exchange.
-
-
-
-// // Generate b
-// const secretKey = Math.floor(Math.random() * 9) + 1;
-// // Receive p & q from server
-// socket.on("request", data => {
-//     publicKey = data;
-//     console.log("Secret Key: ", secretKey);
-//     console.log("p: ", publicKey.p, "g: ", publicKey.g);
-
-//     // Calculate B = q^b mod p
-//     let senderPk = Math.pow(publicKey.g, secretKey) % publicKey.p;
-//     console.log("sender pk", senderPk);
-
-//     // Send B to server and get K_a, A from server
-//     socket.emit("Sender PBK", senderPk);
-
-//     //invitation to join room from server send by sender
-//     socket.on("new_invitation", data => {
-
-//         const socketIdA = data.inviteBy;
-//         const senderPbkReceived = data.pk;
-
-//         console.log("Receiver PBK :", senderPbkReceived);
-
-//         // Calculate K(a) = B^a mod p
-//         const sharedSecret = Math.pow(senderPbkReceived, secretKey) % publicKey.p;
-//         console.log("Shared Secret Key: " + sharedSecret);
-
-//         console.log(`Invitation from sender: ${socketIdA}`);
-
-//         socket.emit("invitation_accept", {
-//             invitedBy: socketIdA,
-//             acceptedBy: socket.id,
-//             pk: senderPk
-//         });
-//     });
-
-//     // socket.on("receiverpk", data => {
-//     //     console.log("receiver pk :", data);
-//     //     const B = data;
-
-//     //     // Calculate K(a) = B^a mod p
-//     //     const sharedSecret = Math.pow(B, secretKey) % publicKey.p;
-//     //     console.log("Shared Secret: " + sharedSecret);
-//     // });
-// });
-// ---------------------------------------------------------------
-
-//chat save of user
-// $('#chat-form').submit(function (event) {
-//     event.preventDefault();
-
-//     var message = $('#message').val();
-
-//     let encryptedMessage = CryptoJS.AES.encrypt(message, sharedSecret.toString()).toString();
-//     console.log(encryptedMessage)
-
-//     $.ajax({
-//         url: '/save-chat',
-//         type: 'POST',
-//         data: { sender_id: sender_id, receiver_id: receiver_id, message: encryptedMessage },
-//         success: function (response) {
-//             if (response.success) {
-//                 // console.log(response.data.message);
-//                 $('#message').val('');
-//                 let decryptedMessage = CryptoJS.AES.decrypt(response.data.message, sharedSecret.toString()).toString(CryptoJS.enc.Utf8);
-//                 let chat = decryptedMessage;
-//                 let html = `
-//                         <div class="current-user-chat">
-//                             <h5>`+ chat + `</h5>
-//                         </div>
-//                         `;
-//                 $('#chat-container').append(html);
-//                 socket.emit('newChat', response.data)
-//             } else {
-//                 alert(response.msg);
-//             }
-//         }
-//     });
-// });
-
-// socket.on('loadNewChat', function (data) {
-
-//     if (sender_id == data.receiver_id && receiver_id == data.sender_id) {
-//         let decryptedMessage = CryptoJS.AES.decrypt(data.message, sharedSecret.toString()).toString(CryptoJS.enc.Utf8);
-//         let html = `
-//                 <div class="distance-user-chat">
-//                     <h5>`+ decryptedMessage + `</h5>
-//                 </div>
-//                 `;
-//         $('#chat-container').append(html);
-//     }
-
-// });
 
 // //load old chats
 // socket.on('loadChats', function (data) {
