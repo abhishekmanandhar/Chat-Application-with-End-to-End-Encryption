@@ -18,10 +18,10 @@ let secretKey = -1;
 let publicKey = -1;
 let sharedKey = -1;
 
-
 socket.on('connect', () => {
-    console.log('Connected with socket ID:', socket.id);
 
+    console.log('Connected with socket ID:', socket.id);
+    
     const keyPair = localStorage.getItem("keyPair");
 
     //if the keys are present in local storage.
@@ -75,7 +75,11 @@ socket.on('connect', () => {
             $('.start-head').hide();
             $('.chat-section').show();
 
-            // socket.emit('existsChat', { sender_id: sender_id, receiver_id: receiver_id });
+            //check if there are old chats between sender and receiver.
+            socket.emit('chat-exist-for-sender-with-receiver', {
+                senderDbId: sender_id,
+                receiverDbId: receiver_id,
+            });
         });
     });
 
@@ -104,6 +108,7 @@ socket.on('connect', () => {
         //if the shared key is present in local storage.
         if (sharedKeyInfo) {
             const info = JSON.parse(sharedKeyInfo);
+            sharedKey = info.sharedKey;
             console.log("Shared key from local storage: " + info.sharedKey);
         }
 
@@ -134,6 +139,7 @@ socket.on('connect', () => {
         //if the shared key is present in local storage.
         if (sharedKeyInfo) {
             const info = JSON.parse(sharedKeyInfo);
+            sharedKey = info.sharedKey;
             console.log("Shared key from local storage: " + info.sharedKey);
         }
 
@@ -167,9 +173,10 @@ socket.on('connect', () => {
         event.preventDefault();
 
         var message = $('#message').val();
+
         var encryptedMessage = CryptoJS.AES.encrypt(message, sharedKey.toString()).toString();
 
-        console.log(encryptedMessage);
+        console.log(sharedKey, encryptedMessage);
 
         $.ajax({
             url: '/save-chat',
@@ -195,8 +202,6 @@ socket.on('connect', () => {
                             `;
                     $('#chat-container').append(html);
 
-
-                    // socket.emit('newChat', response.data);
                     socket.emit('by-sender-to-server-chat-message', {
                         senderDbId: sender_id,
                         senderId: socket.id,
@@ -220,38 +225,39 @@ socket.on('connect', () => {
                     `;
         $('#chat-container').append(html);
     });
+
+    //Load old chats.
+    socket.on('load-chats-for-sender-and-receiver', (data) => {
+        $('#chat-container').html('');
+
+        var chats = data.chats;
+
+        let html = '';
+
+        for (let x = 0; x < chats.length; x++) {
+
+            let addClass = '';
+            if (chats[x]['sender_id'] == sender_id) {
+                addClass = 'current-user-chat';
+            } else {
+                addClass = 'distance-user-chat';
+            }
+
+            var decryptedMessage = CryptoJS.AES.decrypt((chats[x]['message']).toString(), sharedKey.toString()).toString(CryptoJS.enc.Utf8);
+            console.log(`chat: ${(chats[x]['message']).toString()}, shared key: ${sharedKey.toString()}, message: ${decryptedMessage}`);
+
+            html += `
+                    <div class="`+ addClass + `">
+                        <h5>`+ decryptedMessage + `</h5>
+                    </div>
+                    `;
+        }
+        $('#chat-container').append(html);
+    });
 });
 
 
 
-// //load old chats
-// socket.on('loadChats', function (data) {
-//     $('#chat-container').html('');
-
-//     var chats = data.chats;
-//     // console.log(chats);
-
-//     let html = '';
-
-//     for (let x = 0; x < chats.length; x++) {
-
-//         let addClass = '';
-//         if (chats[x]['sender_id'] == sender_id) {
-//             addClass = 'current-user-chat';
-//         } else {
-//             addClass = 'distance-user-chat';
-//         }
-
-//         let decryptedMessage = CryptoJS.AES.decrypt(chats[x]['message'], sharedSecret.toString()).toString(CryptoJS.enc.Utf8);
-
-//         html += `
-//                 <div class="`+ addClass + `">
-//                     <h5>`+ decryptedMessage + `</h5>
-//                 </div>
-//                 `;
-//     }
-//     $('#chat-container').append(html);
-// });
 
 function createKeys(p, g) {
     //Calculate the secret key

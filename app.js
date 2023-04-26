@@ -137,7 +137,7 @@ usp.on('connection', async (socket) => {
     //user broadcast online status
     socket.broadcast.emit('getOnlineUser', { user_id: userId })
 
-    //chatting implementation
+    //Realtime chat implementation
     socket.on('by-sender-to-server-chat-message', (data) => {
         const {senderDbId, senderId, receiverDbId, message} = data
         const invitedUser = getUser(receiverDbId);
@@ -148,17 +148,16 @@ usp.on('connection', async (socket) => {
         })
     })
 
-    //load old chats
-    socket.on('existsChat', async function (data) {
+    //Load old chats for sender and receiver
+    socket.on('chat-exist-for-sender-with-receiver', async (data) => {
         var chats = await Chat.find({
             $or: [
-                { sender_id: data.sender_id, receiver_id: data.receiver_id },
-                { sender_id: data.receiver_id, receiver_id: data.sender_id },
+                { sender_id: data.senderDbId, receiver_id: data.receiverDbId },
+                { sender_id: data.receiverDbId, receiver_id: data.senderDbId },
             ]
         })
 
-        // console.log(chats)
-        socket.emit('loadChats', { chats: chats })
+        socket.emit('load-chats-for-sender-and-receiver', { chats: chats })
 
     })
 
