@@ -14,7 +14,7 @@
     <div class="col-md-3">
       <ul class="list-group">
         <% if(users.length> 0 ){ for(let i = 0; i< users.length; i++){ %>
-            <li class="list-group-item cursor-pointer user-list each-list-user" data-id="<%= users[i]['_id'] %>">
+            <li class="list-group-item cursor-pointer user-list each-list-user" data-id="<%= users[i]['_id'] %>" data-name="<%= users[i]['name'] %>">
               <div class="user-list-flex-container">
                 <img src="<%= 'http://localhost:3000/'+users[i]['image'] %>" alt="" class="profile-img" />
                 <div class="list-user-name">

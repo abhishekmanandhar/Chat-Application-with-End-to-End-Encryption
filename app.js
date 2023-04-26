@@ -27,87 +27,113 @@ const io = require('socket.io')(http)
 var usp = io.of('/user-namespace')
 
 //generates the p & g for the DHKE
-const publicSecret = configurePublicKeys();
+const globalConstants = configurePublicKeys();
 
 //users array stores the user's socket.id and db.id who have joined the chat.
 const users = [];
 const rooms = [];
 
 usp.on('connection', async (socket) => {
-
-    console.log("User connected ", socket)
     
-    //sends the p & g to connected user.
-    socket.emit('request', publicSecret);
+    console.log('A User Connected with SocketId: ' + socket.id)
     
-    //gets the userId of the db for the particular user.
-    var userId = socket.handshake.auth.token
-    const socketId = socket.id;
-
-    //creates the users array with all the users in the chat
-    const userarray = userJoin(socketId, userId);
-    console.log(`socketId: ${userarray.socketId} userId: ${userarray.userId}`);
-
     //join the connected user to there seperate room.
     socket.join(socket.id);
     
-    //find the user's socket.id from the userId equal to the userId in the users array who has been clicked by the sender to send message.
-    socket.on('invited', userId =>{
-        const invitedUser = getUser(userId);
-        const invitedUserSocketId = invitedUser.socketId;
-
-        //join the sender to the common room of sender and receiver.
-        const commonRoom = socket.id + invitedUserSocketId;
-        console.log(commonRoom);
-        socket.join(commonRoom);
-        rooms.push({
-            roomId: commonRoom,
-            users: [socket.id]
-        });
-
-        socket.on("senderpk", senderPk => {
-            // socket.emit("receiverpk", data)
-
-            //send the invitation to join room to the receiver from the sender by the server.
-            socket.to(invitedUserSocketId).emit("new_invitation", {
-                invitedBy : socket.id,
-                pk: senderPk
-            });
-        });
-
-
-        socket.on("invitation_accept", data=>{
-            const commonRoom =  data.invitedBy + data.acceptedBy;
-            console.log(commonRoom);
-            socket.join(commonRoom);
-            const room = rooms.find(room => room.roomId === commonRoom)
-            if(!room) return;
-            room.users.push(data.acceptedBy);
-
-            socket.to(data.invitedBy).emit("invitation_accepted",{
-                invitedBy: data.invitedBy,
-                acceptedBy: data.acceptedBy,
-                pk: data.pk
-            });
-        });
+    //add the user to the room.
+    rooms.push({
+        roomId: socket.id,
+        users: [socket.id],
     });
 
-    console.log('A User Connected with SocketId: ' + socket.id)
+    //sends the p & g to connected user.
+    socket.emit("constants", globalConstants);
+
+    //gets the userId of the db for the particular user.
+    var userId = socket.handshake.auth.token
+
+    //creates the users array with all the users in the chat
+    // socket.on("join", (sender_id) => {
+    //     users.push({
+    //         socketId: socket.id,
+    //         userId: sender_id,
+    //     });
+    // });
+    const socketId = socket.id;
+    const userarray = userJoin(socketId, userId);
+    console.log(`socketId: ${userarray.socketId} userId: ${userarray.userId}`);
+
+    //find the user's socket.id from the userId equal to the userId in the users array who has been clicked by the sender to send message.
+    socket.on('by-sender-to-server-chat-invitation', data => {
+        const {senderId, senderDbId, senderName, senderPbk, receiverDbId, receiverName} = data;
+        const invitedUser = getUser(receiverDbId);
+        const receiverId = invitedUser.socketId;
+
+        //send the invite from the server to the receiver.
+        // socket.on("senderpk", senderPk => {
+        //     // socket.emit("receiverpk", data)
+        //     //send the invitation to join room to the receiver from the sender by the server.
+        //     socket.to(invitedUserSocketId).emit("new_invitation", {
+        //         invitedBy: socket.id,
+        //         pk: senderPk
+        //     });
+        // });
+        usp.to(receiverId).emit("by-server-to-receiver-new-invitation", {
+            senderId: senderId,
+            senderDbId: senderDbId,
+            senderName: senderName,
+            senderPbk: senderPbk,
+            receiverId: receiverId,
+            receiverDbId: receiverDbId,
+            receiverName: receiverName,
+        });
+
+        // //join the sender to the common room of sender and receiver.
+        // const commonRoom = socket.id + receiverId;
+        // console.log(commonRoom);
+        // socket.join(commonRoom);
+        // rooms.push({
+        //     roomId: commonRoom,
+        //     users: [socket.id]
+        // });
+        // console.log(rooms)
+
+
+
+        // socket.on("invitation_accept", data => {
+        //     const commonRoom = data.invitedBy + data.acceptedBy;
+        //     console.log(commonRoom);
+        //     socket.join(commonRoom);
+        //     const room = rooms.find(room => room.roomId === commonRoom)
+        //     if (!room) return;
+        //     room.users.push(data.acceptedBy);
+
+        //     socket.to(data.invitedBy).emit("invitation_accepted", {
+        //         invitedBy: data.invitedBy,
+        //         acceptedBy: data.acceptedBy,
+        //         pk: data.pk
+        //     });
+        // });
+    });
+
+    socket.on("by-receiver-to-server-invitation-accepted", (data) => {
+        usp.to(data.senderId).emit("by-server-to-sender-invitation-accepted", data);
+    });
+
 
     //update user is_online to 1 when the user connects to the chat app.
-    await User.findByIdAndUpdate({ _id: userId }, { $set: { is_online: '1' } }).catch(err=>{
+    await User.findByIdAndUpdate({ _id: userId }, { $set: { is_online: '1' } }).catch(err => {
         console.log("ERROR IN FIND")
     })
 
     //user broadcast online status
     socket.broadcast.emit('getOnlineUser', { user_id: userId })
 
-    
     //chatting implementation
     socket.on('newChat', function (data) {
         socket.broadcast.emit('loadNewChat', data)
     })
-    
+
     //load old chats
     socket.on('existsChat', async function (data) {
         var chats = await Chat.find({
@@ -116,10 +142,10 @@ usp.on('connection', async (socket) => {
                 { sender_id: data.receiver_id, receiver_id: data.sender_id },
             ]
         })
-        
+
         // console.log(chats)
         socket.emit('loadChats', { chats: chats })
-        
+
     })
 
     //runs when user disconnects from the chat
@@ -127,13 +153,14 @@ usp.on('connection', async (socket) => {
         var userId = socket.handshake.auth.token
 
         //remove the user from the users array when the user disconnects from the chat.
-        const user = userLeaves(userId)
+        users.splice(users.findIndex((user) => user.socketId === socket.id), 1);
+        // const user = userLeaves(userId)
 
         console.log(`A user with SocketId: ${socket.id} has disconnected`)
-    
+
         //update user is_online to 0 when the user disconnects to the chat app.
         await User.findByIdAndUpdate({ _id: userId }, { $set: { is_online: '0' } })
-    
+
         //user broadcast offline status
         socket.broadcast.emit('getOfflineUser', { user_id: userId })
     })
@@ -152,22 +179,22 @@ function configurePublicKeys() {
 }
 
 //store the user to the users array when the user joins the chat
-function userJoin(socketId, userId){
-    const user = {socketId, userId};
+function userJoin(socketId, userId) {
+    const user = { socketId, userId };
     users.push(user);
     return user;
 }
 
 //get the user from the users array
-function getUser(userId){
+function getUser(userId) {
     return users.find(user => user.userId === userId);
 }
 
 //deleting user info from users array when user leaves the chat
-function userLeaves(userId){
-    const index = users.findIndex(user => user.userId === userId);
+function userLeaves(userId) {
+    const index = users.findIndex(user => user.socketId === socket.id);
 
-    if(index !== -1){
+    if (index !== -1) {
         return users.splice(index, 1);
     }
 }
