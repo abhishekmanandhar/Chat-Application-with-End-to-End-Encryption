@@ -41,16 +41,24 @@ usp.on('connection', async (socket) => {
     socket.join(socket.id);
     
     //add the user to the room.
-    rooms.push({
-        roomId: socket.id,
-        users: [socket.id],
-    });
+    // rooms.push({
+    //     roomId: socket.id,
+    //     users: [socket.id],
+    // });
 
     //sends the p & g to connected user.
     socket.emit("constants", globalConstants);
 
     //gets the userId of the db for the particular user.
     var userId = socket.handshake.auth.token
+
+    //update user is_online to 1 when the user connects to the chat app.
+    await User.findByIdAndUpdate({ _id: userId }, { $set: { is_online: '1' } }).catch(err => {
+        console.log("ERROR IN FIND")
+    })
+
+    //user broadcast online status
+    socket.broadcast.emit('getOnlineUser', { user_id: userId })
 
     //creates the users array with all the users in the chat
     // socket.on("join", (sender_id) => {
@@ -118,24 +126,15 @@ usp.on('connection', async (socket) => {
 
     socket.on("by-receiver-to-server-invitation-accepted", (data) => {
 
-        const commonRoom = (data.senderId + data.receiverId).split("").sort().join("");
-        socket.join(commonRoom);
-        rooms.push({
-            roomId: commonRoom,
-            users: [data.senderId, data.receiverId],
-        })
+        // const commonRoom = (data.senderId + data.receiverId).split("").sort().join("");
+        // socket.join(commonRoom);
+        // rooms.push({
+        //     roomId: commonRoom,
+        //     users: [data.senderId, data.receiverId],
+        // })
 
         usp.to(data.senderId).emit("by-server-to-sender-invitation-accepted", data);
     });
-
-
-    //update user is_online to 1 when the user connects to the chat app.
-    await User.findByIdAndUpdate({ _id: userId }, { $set: { is_online: '1' } }).catch(err => {
-        console.log("ERROR IN FIND")
-    })
-
-    //user broadcast online status
-    socket.broadcast.emit('getOnlineUser', { user_id: userId })
 
     //Realtime chat implementation
     socket.on('by-sender-to-server-chat-message', (data) => {
@@ -204,13 +203,13 @@ function getUser(userId) {
 }
 
 //deleting user info from users array when user leaves the chat
-function userLeaves(userId) {
-    const index = users.findIndex(user => user.socketId === socket.id);
+// function userLeaves(userId) {
+//     const index = users.findIndex(user => user.socketId === socket.id);
 
-    if (index !== -1) {
-        return users.splice(index, 1);
-    }
-}
+//     if (index !== -1) {
+//         return users.splice(index, 1);
+//     }
+// }
 
 http.listen(3000, function () {
     console.log('server is running');

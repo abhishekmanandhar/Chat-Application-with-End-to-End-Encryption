@@ -175,8 +175,7 @@ socket.on('connect', () => {
         var message = $('#message').val();
 
         var encryptedMessage = CryptoJS.AES.encrypt(message, sharedKey.toString()).toString();
-
-        console.log(sharedKey, encryptedMessage);
+        console.log(`Plain message: ${message}, Encrypted message: ${encryptedMessage}`);
 
         $.ajax({
             url: '/save-chat',
@@ -202,6 +201,8 @@ socket.on('connect', () => {
                             `;
                     $('#chat-container').append(html);
 
+                    scrollChat();
+
                     socket.emit('by-sender-to-server-chat-message', {
                         senderDbId: sender_id,
                         senderId: socket.id,
@@ -224,6 +225,8 @@ socket.on('connect', () => {
                     </div>
                     `;
         $('#chat-container').append(html);
+
+        scrollChat();
     });
 
     //Load old chats.
@@ -244,7 +247,7 @@ socket.on('connect', () => {
             }
 
             var decryptedMessage = CryptoJS.AES.decrypt((chats[x]['message']).toString(), sharedKey.toString()).toString(CryptoJS.enc.Utf8);
-            console.log(`chat: ${(chats[x]['message']).toString()}, shared key: ${sharedKey.toString()}, message: ${decryptedMessage}`);
+            // console.log(`chat: ${(chats[x]['message']).toString()}, shared key: ${sharedKey.toString()}, message: ${decryptedMessage}`);
 
             html += `
                     <div class="`+ addClass + `">
@@ -253,11 +256,16 @@ socket.on('connect', () => {
                     `;
         }
         $('#chat-container').append(html);
+        scrollChat();
     });
 });
 
-
-
+//scrolls the chat to the latest chat
+function scrollChat(){
+    $('#chat-container').animate({
+        scrollTop: $('#chat-container').offset().top + $('#chat-container')[0].scrollHeight
+    }, 0);
+}
 
 function createKeys(p, g) {
     //Calculate the secret key
