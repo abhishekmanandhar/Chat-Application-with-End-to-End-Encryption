@@ -2,8 +2,9 @@
 
 var sender_id = userId;
 var sender_name = username;
-var receiver_id, receiver_name;
-var socket = io('/user-namespace', {
+var sender_image = userimage;
+var receiver_id, receiver_name, receiver_image, receiver_status;
+var socket = io("/user-namespace", {
     auth: {
         token: userId,
     },
@@ -12,16 +13,15 @@ var socket = io('/user-namespace', {
 //initialize the global constants to zero
 let globalConstants = {
     p: 0,
-    g: 0
+    g: 0,
 };
 let secretKey = -1;
 let publicKey = -1;
 let sharedKey = -1;
 
-socket.on('connect', () => {
+socket.on("connect", () => {
+    console.log("Connected with socket ID:", socket.id);
 
-    console.log('Connected with socket ID:', socket.id);
-    
     const keyPair = localStorage.getItem("keyPair");
 
     //if the keys are present in local storage.
@@ -47,7 +47,7 @@ socket.on('connect', () => {
             secretKey = keys.secretKey;
             publicKey = keys.publicKey;
             localStorage.setItem("keyPair", JSON.stringify(keys));
-            console.log("keys generated")
+            console.log("keys generated");
             console.log(`Secret Key: ${secretKey}   Public Key: ${publicKey}`);
         }
     });
@@ -55,30 +55,57 @@ socket.on('connect', () => {
     // socket.emit("join", sender_id);
 
     $(document).ready(function () {
-        $('.user-list').click(function () {
-            var userId = $(this).attr('data-id');
-            var username = $(this).attr('data-name');
-            receiver_id = userId;
-            receiver_name = username;
+        $(".user-list").click(function () {
+            receiver_id = $(this).attr("data-id");
+            receiver_name = $(this).attr("data-name");
+            receiver_image = $(this).attr("data-image");
+            receiver_status = $(this).attr("data-status");
+            receiver_status = receiver_status == 1 ? "Online Now" : "Offline Now";
+
+            // receiver_id = userId;
+            // receiver_name = username;
 
             //sending server the userId of the user who has been clicked from the user list by the sender.
             // socket.emit('chat-invitation', receiver_id);
-            socket.emit('by-sender-to-server-chat-invitation', {
+            socket.emit("by-sender-to-server-chat-invitation", {
                 senderId: socket.id,
                 senderDbId: sender_id,
                 senderName: sender_name,
+                senderImage: sender_image,
                 senderPbk: publicKey,
                 receiverDbId: receiver_id,
                 receiverName: receiver_name,
+                receiverImage: receiver_image,
             });
 
-            $('.start-head').hide();
-            $('.chat-section').show();
+            $(".start-head").hide();
+            $(".chat-section").show();
+
+            //add the user profile of selected user from the list above the chat container
+            var html= 0;
+            $(".other-user-profile").empty();
+            
+            html =` <div class="recent-img">
+                            <img src="`+ 'http://localhost:3000/'+ receiver_image +`" alt="" class="profile-img">
+                        </div>
+                        <div class="recent-data">
+                            <h3>
+                                `+receiver_name+`
+                            </h3>
+                            <span>
+                                `+receiver_status+`
+                            </span>
+                        </div>`;
+            $(".other-user-profile").append(html);
 
             //check if there are old chats between sender and receiver.
-            socket.emit('chat-exist-for-sender-with-receiver', {
+            socket.emit("chat-exist-for-sender-with-receiver", {
                 senderDbId: sender_id,
+                senderImage: sender_image,
+                senderName: sender_name,
                 receiverDbId: receiver_id,
+                receiverImage: receiver_image,
+                receiverName: receiver_name,
             });
         });
     });
@@ -88,20 +115,31 @@ socket.on('connect', () => {
         // console.log(data);
 
         //shared key generate for the receiver
-        const { senderId, senderDbId, senderName, senderPbk, receiverId, receiverDbId, receiverName } = data;
+        const {
+            senderId,
+            senderDbId,
+            senderName,
+            senderImage,
+            senderPbk,
+            receiverId,
+            receiverDbId,
+            receiverName,
+            receiverImage,
+        } = data;
         //in receivers' end sender is actually receiver!
-        const combinedName = receiverName + '&' + senderName + ' key'; //prints the name as sender&receiver
+        const combinedName = receiverName + "&" + senderName + " key"; //prints the name as sender&receiver
 
         socket.emit("by-receiver-to-server-invitation-accepted", {
             senderId: senderId,
             senderDbId: senderDbId,
             senderName: senderName,
+            senderImage: senderImage,
             receiverPbk: publicKey,
             receiverId: socket.id,
             receiverDbId: receiverDbId,
             receiverName: receiverName,
+            receiverImage: receiverImage,
         });
-
 
         const sharedKeyInfo = localStorage.getItem(combinedName);
 
@@ -118,7 +156,7 @@ socket.on('connect', () => {
                 sender: receiverDbId,
                 receiver: senderDbId,
                 sharedKey: sharedKey,
-            }
+            };
             localStorage.setItem(combinedName, JSON.stringify(info));
             console.log(`Shared Secret Key of ${receiverName}: ${sharedKey}`);
         }
@@ -129,10 +167,19 @@ socket.on('connect', () => {
         // console.log(data);
 
         //shared key generate for the sender
-        const { senderId, senderDbId, senderName, receiverPbk, receiverId, receiverDbId, receiverName } = data;
+        const {
+            senderId,
+            senderDbId,
+            senderName,
+            senderImage,
+            receiverPbk,
+            receiverId,
+            receiverDbId,
+            receiverName,
+            receiverImage,
+        } = data;
         //in senders' end sender is sender!
-        const combinedName = senderName + '&' + receiverName + ' key'; //prints the name as sender&receiver
-
+        const combinedName = senderName + "&" + receiverName + " key"; //prints the name as sender&receiver
 
         const sharedKeyInfo = localStorage.getItem(combinedName);
 
@@ -149,38 +196,47 @@ socket.on('connect', () => {
                 sender: senderDbId,
                 receiver: receiverDbId,
                 sharedKey: sharedKey,
-            }
+            };
             localStorage.setItem(combinedName, JSON.stringify(info));
             console.log(`Shared Secret Key of ${senderName}: ${sharedKey}`);
         }
     });
 
     //get user online status
-    socket.on('getOnlineUser', function (data) {
-        // $('#' + data.user_id + '-status').text('Online');
-        $('#' + data.user_id + '-status').removeClass('offline-status');
-        $('#' + data.user_id + '-status').addClass('online-status');
+    socket.on("getOnlineUser", function (data) {
+        // $('#' + data.user_id + '-stat').append("<p>Online</p>");
+        $("#" + data.user_id + "-status").removeClass("offline-status");
+        $("#" + data.user_id + "-status").addClass("online-status");
     });
     //get user offline status
-    socket.on('getOfflineUser', function (data) {
-        // $('#' + data.user_id + '-status').text('Offline');
-        $('#' + data.user_id + '-status').addClass('offline-status');
-        $('#' + data.user_id + '-status').removeClass('online-status');
+    socket.on("getOfflineUser", function (data) {
+        // $('#' + data.user_id + '-stat').append("<p>Offline</p>");
+        $("#" + data.user_id + "-status").addClass("offline-status");
+        $("#" + data.user_id + "-status").removeClass("online-status");
     });
 
     //Show chat at senders' side.
-    $('#chat-form').submit(function (event) {
+    $("#chat-form").submit(function (event) {
         event.preventDefault();
 
-        var message = $('#message').val();
+        var message = $("#message").val();
 
-        var encryptedMessage = CryptoJS.AES.encrypt(message, sharedKey.toString()).toString();
-        console.log(`Plain message: ${message}, Encrypted message: ${encryptedMessage}`);
+        var encryptedMessage = CryptoJS.AES.encrypt(
+            message,
+            sharedKey.toString()
+        ).toString();
+        console.log(
+            `Plain message: ${message}, Encrypted message: ${encryptedMessage}`
+        );
 
         $.ajax({
-            url: '/save-chat',
-            type: 'POST',
-            data: { sender_id: sender_id, receiver_id: receiver_id, message: encryptedMessage },
+            url: "/save-chat",
+            type: "POST",
+            data: {
+                sender_id: sender_id,
+                receiver_id: receiver_id,
+                message: encryptedMessage,
+            },
 
             //when the response is sent from the server
             success: function (response) {
@@ -188,83 +244,142 @@ socket.on('connect', () => {
                     // console.log(response.data.message);
 
                     //empty out the message box
-                    $('#message').val('');
+                    $("#message").val("");
 
-                    let decryptedMessage = CryptoJS.AES.decrypt(response.data.message, sharedKey.toString()).toString(CryptoJS.enc.Utf8);
+                    let decryptedMessage = CryptoJS.AES.decrypt(
+                        response.data.message,
+                        sharedKey.toString()
+                    ).toString(CryptoJS.enc.Utf8);
 
                     //show the decrypted message in the chat container
                     let chat = decryptedMessage;
-                    let html = `
-                            <div class="current-user-chat">
-                                <h5>`+ chat + `</h5>
-                            </div>
-                            `;
-                    $('#chat-container').append(html);
+                    let html =` <div class="box">
+                                    <div class="receiver">
+                                        <div class="recents">
+                                            <div class="recent-img">
+                                                <img src="`+ 'http://localhost:3000/'+ sender_image +`" alt="sender profile picture" />
+                                            </div>
+                                            <div class="recent-data">
+                                                <h3>
+                                                    `+ sender_name +`
+                                                </h3>
+                                                <span>
+                                                    `+ decryptedMessage +` 
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>`;
+                    $("#chat-container").append(html);
 
                     scrollChat();
 
-                    socket.emit('by-sender-to-server-chat-message', {
+                    socket.emit("by-sender-to-server-chat-message", {
                         senderDbId: sender_id,
                         senderId: socket.id,
+                        senderName: sender_name,
+                        senderImage: sender_image,
                         receiverDbId: receiver_id,
                         message: encryptedMessage,
+                        receiverName: receiver_name,
+                        receiverImage: receiver_image,
                     });
                 } else {
                     alert(response.msg);
                 }
-            }
+            },
         });
     });
 
     //Show chat at receivers' side.
-    socket.on('by-server-to-receiver-chat-message', (data) => {
-        let decryptedMessage = CryptoJS.AES.decrypt(data.message, sharedKey.toString()).toString(CryptoJS.enc.Utf8);
-        let html = `
-                    <div class="distance-user-chat">
-                        <h5>`+ decryptedMessage + `</h5>
-                    </div>
-                    `;
-        $('#chat-container').append(html);
-
+    socket.on("by-server-to-receiver-chat-message", (data) => {
+        let decryptedMessage = CryptoJS.AES.decrypt(
+            data.message,
+            sharedKey.toString()
+        ).toString(CryptoJS.enc.Utf8);
+            let html =` <div class="box">
+                        <div class="sender">
+                            <div class="recents">
+                                <div class="recent-img">
+                                    <img src="`+ 'http://localhost:3000/'+ data.senderImage +`" alt="sender profile picture" />
+                                </div>
+                                <div class="recent-data">
+                                    <h3>
+                                        `+ data.senderName +`
+                                    </h3>
+                                    <span>
+                                        `+ decryptedMessage +` 
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+        $("#chat-container").append(html);
+        
         scrollChat();
     });
 
     //Load old chats.
-    socket.on('load-chats-for-sender-and-receiver', (data) => {
-        $('#chat-container').html('');
+    socket.on("load-chats-for-sender-and-receiver", (data) => {
+        $("#chat-container").html("");
 
         var chats = data.chats;
 
-        let html = '';
+        let html = "";
 
         for (let x = 0; x < chats.length; x++) {
-
-            let addClass = '';
-            if (chats[x]['sender_id'] == sender_id) {
-                addClass = 'current-user-chat';
+            let addClass = "";
+            let image = "";
+            let name = "";
+            if (chats[x]["sender_id"] == sender_id) {
+                addClass = "receiver";
+                image = data.senderImage;
+                name = data.senderName;
             } else {
-                addClass = 'distance-user-chat';
+                addClass = "sender";
+                image = data.receiverImage;
+                name = data.receiverName;
             }
 
-            var decryptedMessage = CryptoJS.AES.decrypt((chats[x]['message']).toString(), sharedKey.toString()).toString(CryptoJS.enc.Utf8);
+            var decryptedMessage = CryptoJS.AES.decrypt(
+                chats[x]["message"].toString(),
+                sharedKey.toString()
+            ).toString(CryptoJS.enc.Utf8);
             // console.log(`chat: ${(chats[x]['message']).toString()}, shared key: ${sharedKey.toString()}, message: ${decryptedMessage}`);
 
-            html += `
-                    <div class="`+ addClass + `">
-                        <h5>`+ decryptedMessage + `</h5>
-                    </div>
-                    `;
+            html +=`<div class="box">
+                        <div class="`+addClass+`">
+                            <div class="recents">
+                                <div class="recent-img">
+                                    <img src="`+ 'http://localhost:3000/'+ image +`" alt="sender profile picture" />
+                                </div>
+                                <div class="recent-data">
+                                    <h3>
+                                        `+ name +`
+                                    </h3>
+                                    <span>
+                                        `+ decryptedMessage +` 
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
         }
-        $('#chat-container').append(html);
+        $("#chat-container").append(html);
         scrollChat();
     });
 });
 
 //scrolls the chat to the latest chat
-function scrollChat(){
-    $('#chat-container').animate({
-        scrollTop: $('#chat-container').offset().top + $('#chat-container')[0].scrollHeight
-    }, 0);
+function scrollChat() {
+    $("#chat-container").animate(
+        {
+            scrollTop:
+                $("#chat-container").offset().top +
+                $("#chat-container")[0].scrollHeight,
+        },
+        0
+    );
 }
 
 function createKeys(p, g) {
@@ -291,11 +406,10 @@ function createKeys(p, g) {
     const num1 = new Big(remainder);
     const publicKey = num1.toFixed(0);
 
-    return { secretKey, publicKey }
+    return { secretKey, publicKey };
 }
 
 function createSharedKeys(mySecretKey, theirPublicKey, p) {
-
     const base = new Big(theirPublicKey);
     const result = base.pow(mySecretKey);
     const num = new Big(result.toString());

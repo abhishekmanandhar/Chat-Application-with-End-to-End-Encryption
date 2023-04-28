@@ -4,48 +4,135 @@
 <%- include('layouts/header.ejs') %>
 
   <!-- = variable inside the ejs tags is used to output the dynamic variable -->
-  <div class="profile-flex-container">
-    <img src="<%= 'http://localhost:3000/'+user.image%>" alt="" class="profile-img">
-    <h2 class="mb-4">
-      <%= user.name%>
-    </h2>
-  </div>
-  <div class="row">
-    <div class="col-md-3">
-      <ul class="list-group">
-        <% if(users.length> 0 ){ for(let i = 0; i< users.length; i++){ %>
-            <li class="list-group-item cursor-pointer user-list each-list-user" data-id="<%= users[i]['_id'] %>" data-name="<%= users[i]['name'] %>">
-              <div class="user-list-flex-container">
-                <img src="<%= 'http://localhost:3000/'+users[i]['image'] %>" alt="" class="profile-img" />
-                <div class="list-user-name">
-                  <%= users[i]['name'] %>
-                </div>
 
-  <!-- user online or offline frontend code! -->
-  <% if(users[i]['is_online']==1){ %>
+  <!-- new -->
+  <div class="container">
+    <div class="sidebar">
+      <div class="profile">
+        <div class="profile-img">
+          <img src="/images/logo.png" alt="" />
+        </div>
+        <div class="profile-data">
+          <h3>Chatty</h3>
+          <span>A Realtime Chat App</span>
+        </div>
+      </div>
+
+      <div class="chats">
+        <h3 class="title">Chats</h3>
+        <% if(users.length> 0 ){ for(let i = 0; i< users.length; i++){ %>
+            <div class="user user-list" data-id="<%= users[i]['_id'] %>" data-name="<%= users[i]['name'] %>"
+              data-image="<%= users[i]['image'] %>" data-status="<%= users[i]['is_online'] %>">
+              <div class="user-profile">
+                <div class="recent-img">
+                  <img src="<%= 'http://localhost:3000/'+users[i]['image'] %>" alt="" class="profile-img" />
+                </div>
+                <div class="recent-data">
+                  <h3>
+                    <%= users[i]['name'] %>
+                  </h3>
+                </div>
+              </div>
+              <div class="flex-status">
+                <!-- user online or offline frontend code! -->
+                <% if(users[i]['is_online']==1){ %>
                   <div class="online-status" id="<%= users[i]['_id'] %>-status"></div>
                   <% } else{ %>
                     <div class="offline-status" id="<%= users[i]['_id'] %>-status"></div>
                     <% }%>
               </div>
-            </li>
+            </div>
             <% } } %>
-      </ul>
+      </div>
+
+      <a href="/logout" class="logout">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <p>Logout</p>
+      </a>
     </div>
-    <div class="col-md-9">
-      <h3 class="start-head">Click to Start the Chat</h3>
-      <div class="chat-section">
+
+    <div class="chat-box">
+      <h3 class="start-head">Select a user to start chatting!</h3>
+      <div class="chat-section hidden">
+        <div class="box-top">
+          <div class="other-user-profile">
+            <!-- <div class="recent-img">
+              <img src="<%= 'http://localhost:3000/'+user.image%>" alt="" class="profile-img">
+            </div>
+            <div class="recent-data">
+              <h3>
+                <%= user.name%>
+              </h3>
+              <% if(user.is_online == 1){ %>
+                <div  id="<%= users._id %>-stat"></div>
+                <% } else{ %>
+                  <div  id="<%= users._id %>-stat"></div>
+                  <% }%>
+            </div> -->
+          </div>
+        </div>
         <div id="chat-container">
           <!-- all the chats will go here -->
+          <!-- <div class="box">
+                    <div class="sender">
+                        <div class="recents">
+                            <div class="recent-img">
+                                <img src="./pic/2.jpg" alt="" />
+                            </div>
+                            <div class="recent-data">
+                                <h3>sender</h3>
+                                <span>hi how are you</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="box">
+                    <div class="receiver">
+                        <div class="recents">
+                            <div class="recent-data">
+                                <h3>david</h3>
+                                <span>i am good </span>
+                            </div>
+                            <div class="recent-img">
+                                <img src="./pic/3.jpg" alt="" />
+                            </div>
+                        </div>
+                    </div>
+                </div> -->
         </div>
-        <form action="" id="chat-form">
-          <input type="text" name="message" placeholder="Enter Message" id="message" class="message-width" required />
-          <input type="submit" value="Send" class="btn btn-primary send-width" />
-        </form>
+        <div class="input-box">
+          <i class="fa-solid fa-comment-dots chat-icon"></i>
+          <form action="" id="chat-form">
+            <input type="text" name="message" placeholder="Enter Message" id="message" class="message-width" required />
+            <button type="submit" class="send"><i class="fa-solid fa-paper-plane"></i></button>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-  </div>
+
+    <div class="contact">
+      <div class="contact-details">
+        <img src="<%= 'http://localhost:3000/'+user.image%>" alt="" class="profile-img">
+        <!-- <img src="./pic/2.jpg" alt="" /> -->
+        <div class="info">
+          <h3>
+            <%= user.name%>
+          </h3>
+          <a href="#">
+            <%= user.email%>
+          </a>
+          <div class="icon">
+            <i class="fa-solid fa-phone"></i>
+            <i class="fa-solid fa-video"></i>
+            <i class="fa-solid fa-user"></i>
+          </div>
+        </div>
+      </div>
+      <div class="gif-image">
+        <img src="/images/chat.gif" alt="chat gif">
+        <div class="gif-slogan">Connect Confidently, <span>Chat Securely!</span></div>
+      </div>
+    </div>
   </div>
 
   <%- include('layouts/footer.ejs') %>

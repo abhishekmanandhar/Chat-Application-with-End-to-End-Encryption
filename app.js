@@ -73,7 +73,7 @@ usp.on('connection', async (socket) => {
 
     //find the user's socket.id from the userId equal to the userId in the users array who has been clicked by the sender to send message.
     socket.on('by-sender-to-server-chat-invitation', data => {
-        const {senderId, senderDbId, senderName, senderPbk, receiverDbId, receiverName} = data;
+        const {senderId, senderDbId, senderName, senderImage, senderPbk, receiverDbId, receiverName, receiverImage} = data;
         const invitedUser = getUser(receiverDbId);
         const receiverId = invitedUser.socketId;
 
@@ -90,10 +90,12 @@ usp.on('connection', async (socket) => {
             senderId: senderId,
             senderDbId: senderDbId,
             senderName: senderName,
+            senderImage: senderImage,
             senderPbk: senderPbk,
             receiverId: receiverId,
             receiverDbId: receiverDbId,
             receiverName: receiverName,
+            receiverImage: receiverImage,
         });
 
         // //join the sender to the common room of sender and receiver.
@@ -138,12 +140,20 @@ usp.on('connection', async (socket) => {
 
     //Realtime chat implementation
     socket.on('by-sender-to-server-chat-message', (data) => {
-        const {senderDbId, senderId, receiverDbId, message} = data
+        const {senderDbId, senderId, senderName, senderImage, receiverDbId, message, receiverName, receiverImage} = data
         const invitedUser = getUser(receiverDbId);
         const receiverId = invitedUser.socketId;
 
         usp.to(receiverId).emit("by-server-to-receiver-chat-message", {
+            senderDbId: senderDbId,
+            senderId: senderId,
+            senderName: senderName,
+            senderImage: senderImage,
+            receiverDbId: receiverDbId,
+            receiverId: receiverId,
             message: message,
+            receiverName: receiverName,
+            receiverImage: receiverImage,
         })
     })
 
@@ -156,8 +166,13 @@ usp.on('connection', async (socket) => {
             ]
         })
 
-        socket.emit('load-chats-for-sender-and-receiver', { chats: chats })
-
+        socket.emit('load-chats-for-sender-and-receiver', { 
+            chats: chats,
+            senderImage: data.senderImage,
+            senderName: data.senderName,
+            receiverImage: data.receiverImage,
+            receiverName: data.receiverName,
+        })
     })
 
     //runs when user disconnects from the chat
