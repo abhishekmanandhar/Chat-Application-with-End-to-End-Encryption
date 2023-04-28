@@ -1,6 +1,14 @@
 /* @import url(https://fonts.googleapis.com/css?family=Roboto:300); */
 @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
 
+body {
+  /* background-color: black; */
+  background: url(/images/gradiant.jpg) no-repeat center/cover;
+  font-family: "Roboto", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;      
+}
+
 .login-page {
   width: 360px;
   padding: 8% 0 0;
@@ -62,10 +70,3 @@
   display: none;
 }
 
-body {
-  /* background-color: black; */
-  background: url(/images/gradiant.jpg) no-repeat center/cover;
-  font-family: "Roboto", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;      
-}
