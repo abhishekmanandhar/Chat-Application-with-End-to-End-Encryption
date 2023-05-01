@@ -85,6 +85,7 @@ body {
   border-radius: 10px;
   transition: background 0.2s ease-in;
   width: 88%;
+  position: relative;
 }
 
 .user .user-profile{
@@ -119,6 +120,9 @@ body {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  position: absolute;
+  top: 50px;
+  left: 60px;
 }
 
 .user:hover {
@@ -409,14 +413,16 @@ body {
 
 .online-status{
   background-color: greenyellow;
-  width: 10px;
-  height: 10px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
+  border: 3px solid white;
 }
 
 .offline-status{
   background-color: gray;
-  width: 10px;
-  height: 10px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
+  border: 3px solid white;
 }
