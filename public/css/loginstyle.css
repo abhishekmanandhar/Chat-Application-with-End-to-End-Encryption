@@ -4,6 +4,7 @@
 body {
   /* background-color: black; */
   background: url(/images/gradiant.jpg) no-repeat center/cover;
+  /* height: 100vh; */
   font-family: "Roboto", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;      
