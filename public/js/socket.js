@@ -253,7 +253,7 @@ socket.on("connect", () => {
 
                     //show the decrypted message in the chat container
                     let chat = decryptedMessage;
-                    let html =` <div class="box">
+                    let html =` <div class="box" id="`+response.data._id+`">
                                     <div class="receiver">
                                         <div class="recents">
                                             <div class="recent-img">
@@ -263,9 +263,12 @@ socket.on("connect", () => {
                                                 <h3>
                                                     `+ sender_name +`
                                                 </h3>
-                                                <span>
-                                                    `+ decryptedMessage +` 
-                                                </span>
+                                                <div class="msg">
+                                                    <span>
+                                                        `+ decryptedMessage +` 
+                                                    </span>
+                                                    <i class="fa-solid fa-trash" data-id="`+response.data._id+`"></i>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -281,6 +284,7 @@ socket.on("connect", () => {
                         senderImage: sender_image,
                         receiverDbId: receiver_id,
                         message: encryptedMessage,
+                        messageId: response.data._id,
                         receiverName: receiver_name,
                         receiverImage: receiver_image,
                     });
@@ -297,7 +301,7 @@ socket.on("connect", () => {
             data.message,
             sharedKey.toString()
         ).toString(CryptoJS.enc.Utf8);
-            let html =` <div class="box">
+            let html =` <div class="box" id="`+data.messageId+`" >
                         <div class="sender">
                             <div class="recents">
                                 <div class="recent-img">
@@ -347,7 +351,7 @@ socket.on("connect", () => {
             ).toString(CryptoJS.enc.Utf8);
             // console.log(`chat: ${(chats[x]['message']).toString()}, shared key: ${sharedKey.toString()}, message: ${decryptedMessage}`);
 
-            html +=`<div class="box">
+            html +=`<div class="box" id="`+chats[x]["_id"]+`">
                         <div class="`+addClass+`">
                             <div class="recents">
                                 <div class="recent-img">
@@ -357,9 +361,14 @@ socket.on("connect", () => {
                                     <h3>
                                         `+ name +`
                                     </h3>
-                                    <span>
-                                        `+ decryptedMessage +` 
-                                    </span>
+                                    <div class="msg">
+                                        <span>
+                                            `+ decryptedMessage +`
+                                        </span>`;
+                                        if (chats[x]["sender_id"] == sender_id) {
+                                            html += `<i class="fa-solid fa-trash" data-id="`+chats[x]["_id"]+`"></i>`;
+                                        }
+            html +=`                </div>
                                 </div>
                             </div>
                         </div>
@@ -368,6 +377,36 @@ socket.on("connect", () => {
         $("#chat-container").append(html);
         scrollChat();
     });
+
+    //Delete chat at the senders' end
+    $(document).on('click', '.fa-trash', function(){
+        //get the message id to delete
+        var message_id = $(this).attr("data-id");
+
+        $.ajax({
+            url: '/delete-chat',
+            type: 'POST',
+            data: {id: message_id},
+            success:function(res){
+                if(res.success == true){
+                    $('#'+message_id).remove();
+
+                    socket.emit("by-sender-to-server-chat-deleted", {
+                        messageId: message_id,
+                        receiverDbId: receiver_id,
+                    });
+                }
+                else{
+                    alert(res.msg);
+                }
+            }
+        });
+    })
+
+    //Delete the chat at the receivers' end.
+    socket.on("by-server-to-receiver-chat-deleted", (messageId) => {
+        $('#'+messageId).remove();
+    })
 });
 
 //scrolls the chat to the latest chat

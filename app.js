@@ -140,7 +140,7 @@ usp.on('connection', async (socket) => {
 
     //Realtime chat implementation
     socket.on('by-sender-to-server-chat-message', (data) => {
-        const {senderDbId, senderId, senderName, senderImage, receiverDbId, message, receiverName, receiverImage} = data
+        const {senderDbId, senderId, senderName, senderImage, receiverDbId, message, messageId, receiverName, receiverImage} = data
         const invitedUser = getUser(receiverDbId);
         const receiverId = invitedUser.socketId;
 
@@ -152,6 +152,7 @@ usp.on('connection', async (socket) => {
             receiverDbId: receiverDbId,
             receiverId: receiverId,
             message: message,
+            messageId: messageId,
             receiverName: receiverName,
             receiverImage: receiverImage,
         })
@@ -173,6 +174,15 @@ usp.on('connection', async (socket) => {
             receiverImage: data.receiverImage,
             receiverName: data.receiverName,
         })
+    })
+
+    //Delete chat request from the sender.
+    socket.on('by-sender-to-server-chat-deleted', (data) => {
+        const {messageId, receiverDbId} = data
+        const invitedUser = getUser(receiverDbId);
+        const receiverId = invitedUser.socketId;
+
+        usp.to(receiverId).emit("by-server-to-receiver-chat-deleted", messageId)
     })
 
     //runs when user disconnects from the chat

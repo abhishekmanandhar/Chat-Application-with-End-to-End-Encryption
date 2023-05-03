@@ -15,6 +15,8 @@ body {
 
 .container {
   display: flex;
+  max-width: 100vw;
+  padding: 0;
 }
 
 .sidebar {
@@ -276,6 +278,7 @@ body {
   flex-flow: column nowrap;
   justify-content: center;
   align-items: flex-start;
+  width: 100%;
 }
 
 .receiver .recents {
@@ -292,6 +295,38 @@ body {
   flex-flow: column nowrap;
   justify-content: center;
   align-items: flex-end;
+  width: 100%;
+}
+
+.sender .recent-data .msg{
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.receiver .recent-data .msg{
+  display: flex;
+  flex-flow: row-reverse nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+}
+
+.receiver i{
+  color: gray;
+  padding-right: 10px;
+  font-size: 14px;
+  display: none;
+}
+
+.receiver i:hover{
+  cursor: pointer;
+}
+
+.box:hover i{
+  display: block;
 }
 
 .box h3 {
@@ -304,6 +339,7 @@ body {
   color: white;
   padding: 6px 20px;
   font-size: 16px;
+  max-width: 80%;
 }
 
 .box .sender span {

@@ -1,18 +1,26 @@
 /* @import url(https://fonts.googleapis.com/css?family=Roboto:300); */
 @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
 
+*{
+  margin: 0;
+  padding: 0;
+}
+
 body {
   /* background-color: black; */
   background: url(/images/gradiant.jpg) no-repeat center/cover;
-  /* height: 100vh; */
+  height: 100vh;
   font-family: "Roboto", sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;      
+  -moz-osx-font-smoothing: grayscale; 
+  display: flex;
+  justify-content: center;
+  align-items: center;     
 }
 
 .login-page {
   width: 360px;
-  padding: 8% 0 0;
+  /* padding: 8% 0 0; */
   margin: auto; 
 }
 .form {
@@ -20,12 +28,17 @@ body {
   z-index: 1;
   background: #f1f8ef;
   max-width: 360px;
-  margin: 0 auto 100px;
-  padding: 45px;
+  /* margin: 0 auto 100px; */
+  padding: 50px;
   text-align: center;
   box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
   border-radius: 10px;
 }
+
+.form h1{
+  margin-bottom: 20px;
+}
+
 .form input {
   font-family: "Roboto", sans-serif;
   outline: 0;
