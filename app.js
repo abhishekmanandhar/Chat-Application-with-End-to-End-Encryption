@@ -4,7 +4,7 @@ const generator = require('./functions');
 //using mongoose which is and ODM(Object Document Mapping Library) for mongodb
 var mongoose = require('mongoose');
 //connecting the mongodb database(chat-app) locally using mongodb compass
-mongoose.connect('mongodb://127.0.0.1:27017/realtime-chat-app')
+mongoose.connect('mongodb://127.0.0.1:27017/realtime-chat-app-test')
     .then(() => console.log("Successfully Connected to MongoDB"))
     .catch(err => {
         console.error("Error")
@@ -73,19 +73,37 @@ usp.on('connection', async (socket) => {
 
     //find the user's socket.id from the userId equal to the userId in the users array who has been clicked by the sender to send message.
     socket.on('by-sender-to-server-chat-invitation', data => {
-        const {senderId, senderDbId, senderName, senderImage, senderPbk, receiverDbId, receiverName, receiverImage} = data;
+        // const {senderId, senderDbId, senderName, senderImage, senderPbk, receiverDbId, receiverName, receiverImage} = data;
+        // const invitedUser = getUser(receiverDbId);
+        // const receiverId = invitedUser.socketId;
+
+        // //send the invite from the server to the receiver.
+        // // socket.on("senderpk", senderPk => {
+        // //     // socket.emit("receiverpk", data)
+        // //     //send the invitation to join room to the receiver from the sender by the server.
+        // //     socket.to(invitedUserSocketId).emit("new_invitation", {
+        // //         invitedBy: socket.id,
+        // //         pk: senderPk
+        // //     });
+        // // });
+        // usp.to(receiverId).emit("by-server-to-receiver-new-invitation", {
+        //     senderId: senderId,
+        //     senderDbId: senderDbId,
+        //     senderName: senderName,
+        //     senderImage: senderImage,
+        //     senderPbk: senderPbk,
+        //     receiverId: receiverId,
+        //     receiverDbId: receiverDbId,
+        //     receiverName: receiverName,
+        //     receiverImage: receiverImage,
+        // });
+
+        //---------------------
+        const {senderId, senderDbId, senderName, senderImage, senderPbk, receiverDbId, receiverName, receiverImage, salt} = data;
         const invitedUser = getUser(receiverDbId);
         const receiverId = invitedUser.socketId;
 
         //send the invite from the server to the receiver.
-        // socket.on("senderpk", senderPk => {
-        //     // socket.emit("receiverpk", data)
-        //     //send the invitation to join room to the receiver from the sender by the server.
-        //     socket.to(invitedUserSocketId).emit("new_invitation", {
-        //         invitedBy: socket.id,
-        //         pk: senderPk
-        //     });
-        // });
         usp.to(receiverId).emit("by-server-to-receiver-new-invitation", {
             senderId: senderId,
             senderDbId: senderDbId,
@@ -96,8 +114,10 @@ usp.on('connection', async (socket) => {
             receiverDbId: receiverDbId,
             receiverName: receiverName,
             receiverImage: receiverImage,
+            salt: salt,
         });
-
+        //---------------------
+        
         // //join the sender to the common room of sender and receiver.
         // const commonRoom = socket.id + receiverId;
         // console.log(commonRoom);

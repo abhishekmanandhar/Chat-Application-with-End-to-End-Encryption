@@ -462,3 +462,17 @@ body {
   border-radius: 50%;
   border: 3px solid white;
 }
+
+::-webkit-scrollbar{
+  width: 15px;
+}
+
+::-webkit-scrollbar-thumb{
+  background: linear-gradient(to bottom, #bd6267, #5b4c97);
+  border-radius: 50px;
+  border: 3px solid rgb(22, 22, 22);
+}
+
+::-webkit-scrollbar-track{
+  background-color: rgb(22, 22, 22);
+}

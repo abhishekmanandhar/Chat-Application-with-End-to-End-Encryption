@@ -1,5 +1,3 @@
-// var CryptoJS = require("crypto-js");
-
 var sender_id = userId;
 var sender_name = username;
 var sender_image = userimage;
@@ -67,6 +65,19 @@ socket.on("connect", () => {
 
             //sending server the userId of the user who has been clicked from the user list by the sender.
             // socket.emit('chat-invitation', receiver_id);
+            // socket.emit("by-sender-to-server-chat-invitation", {
+            //     senderId: socket.id,
+            //     senderDbId: sender_id,
+            //     senderName: sender_name,
+            //     senderImage: sender_image,
+            //     senderPbk: publicKey,
+            //     receiverDbId: receiver_id,
+            //     receiverName: receiver_name,
+            //     receiverImage: receiver_image,
+            // });
+
+            //---------------------
+            const salt = CryptoJS.lib.WordArray.random(128/8);
             socket.emit("by-sender-to-server-chat-invitation", {
                 senderId: socket.id,
                 senderDbId: sender_id,
@@ -76,24 +87,26 @@ socket.on("connect", () => {
                 receiverDbId: receiver_id,
                 receiverName: receiver_name,
                 receiverImage: receiver_image,
+                salt: salt.toString(),
             });
+            //---------------------
 
             $(".start-head").hide();
             $(".chat-section").show();
 
             //add the user profile of selected user from the list above the chat container
-            var html= 0;
+            var html = 0;
             $(".other-user-profile").empty();
-            
-            html =` <div class="recent-img">
-                            <img src="`+ 'http://localhost:3000/'+ receiver_image +`" alt="" class="profile-img">
+
+            html = ` <div class="recent-img">
+                            <img src="`+ 'http://localhost:3000/' + receiver_image + `" alt="" class="profile-img">
                         </div>
                         <div class="recent-data">
                             <h3>
-                                `+receiver_name+`
+                                `+ receiver_name + `
                             </h3>
                             <span>
-                                `+receiver_status+`
+                                `+ receiver_status + `
                             </span>
                         </div>`;
             $(".other-user-profile").append(html);
@@ -115,6 +128,19 @@ socket.on("connect", () => {
         // console.log(data);
 
         //shared key generate for the receiver
+        // const {
+        //     senderId,
+        //     senderDbId,
+        //     senderName,
+        //     senderImage,
+        //     senderPbk,
+        //     receiverId,
+        //     receiverDbId,
+        //     receiverName,
+        //     receiverImage,
+        // } = data;
+
+        //---------------------
         const {
             senderId,
             senderDbId,
@@ -125,10 +151,26 @@ socket.on("connect", () => {
             receiverDbId,
             receiverName,
             receiverImage,
+            salt,
         } = data;
+        //---------------------
+
         //in receivers' end sender is actually receiver!
         const combinedName = receiverName + "&" + senderName + " key"; //prints the name as sender&receiver
 
+        // socket.emit("by-receiver-to-server-invitation-accepted", {
+        //     senderId: senderId,
+        //     senderDbId: senderDbId,
+        //     senderName: senderName,
+        //     senderImage: senderImage,
+        //     receiverPbk: publicKey,
+        //     receiverId: socket.id,
+        //     receiverDbId: receiverDbId,
+        //     receiverName: receiverName,
+        //     receiverImage: receiverImage,
+        // });
+        
+        //---------------------
         socket.emit("by-receiver-to-server-invitation-accepted", {
             senderId: senderId,
             senderDbId: senderDbId,
@@ -139,7 +181,9 @@ socket.on("connect", () => {
             receiverDbId: receiverDbId,
             receiverName: receiverName,
             receiverImage: receiverImage,
+            salt: salt,
         });
+        //---------------------
 
         const sharedKeyInfo = localStorage.getItem(combinedName);
 
@@ -152,6 +196,23 @@ socket.on("connect", () => {
 
         if (!sharedKeyInfo) {
             sharedKey = createSharedKeys(secretKey, senderPbk, globalConstants.p);
+
+            //---------------------
+            const password = sharedKey;
+            const passwordBytes = new Uint8Array(4);
+            passwordBytes[0] = (password >> 24) & 0xff;
+            passwordBytes[1] = (password >> 16) & 0xff;
+            passwordBytes[2] = (password >> 8) & 0xff;
+            passwordBytes[3] = password & 0xff;
+            const passwordWordArray = CryptoJS.lib.WordArray.create(passwordBytes);
+
+            const key = CryptoJS.PBKDF2(passwordWordArray, salt, {
+                keySize: 256 / 32,
+                iterations: 10000,
+            }).toString(CryptoJS.enc.Hex);
+            sharedKey = key;
+            //---------------------
+
             const info = {
                 sender: receiverDbId,
                 receiver: senderDbId,
@@ -167,6 +228,19 @@ socket.on("connect", () => {
         // console.log(data);
 
         //shared key generate for the sender
+        // const {
+        //     senderId,
+        //     senderDbId,
+        //     senderName,
+        //     senderImage,
+        //     receiverPbk,
+        //     receiverId,
+        //     receiverDbId,
+        //     receiverName,
+        //     receiverImage,
+        // } = data;
+
+        //---------------------
         const {
             senderId,
             senderDbId,
@@ -177,7 +251,10 @@ socket.on("connect", () => {
             receiverDbId,
             receiverName,
             receiverImage,
+            salt,
         } = data;
+        //---------------------
+
         //in senders' end sender is sender!
         const combinedName = senderName + "&" + receiverName + " key"; //prints the name as sender&receiver
 
@@ -192,6 +269,23 @@ socket.on("connect", () => {
 
         if (!sharedKeyInfo) {
             sharedKey = createSharedKeys(secretKey, receiverPbk, globalConstants.p);
+
+            //---------------------
+            const password = sharedKey;
+            const passwordBytes = new Uint8Array(4);
+            passwordBytes[0] = (password >> 24) & 0xff;
+            passwordBytes[1] = (password >> 16) & 0xff;
+            passwordBytes[2] = (password >> 8) & 0xff;
+            passwordBytes[3] = password & 0xff;
+            const passwordWordArray = CryptoJS.lib.WordArray.create(passwordBytes);
+
+            const key = CryptoJS.PBKDF2(passwordWordArray, salt, {
+                keySize: 256 / 32,
+                iterations: 10000,
+            }).toString(CryptoJS.enc.Hex);
+            sharedKey = key;
+            //---------------------
+
             const info = {
                 sender: senderDbId,
                 receiver: receiverDbId,
@@ -221,10 +315,18 @@ socket.on("connect", () => {
 
         var message = $("#message").val();
 
+        // var encryptedMessage = CryptoJS.AES.encrypt(
+        //     message,
+        //     sharedKey.toString()
+        // ).toString();
+
+        //---------------------
         var encryptedMessage = CryptoJS.AES.encrypt(
             message,
-            sharedKey.toString()
+            sharedKey
         ).toString();
+        //---------------------
+
         console.log(
             `Plain message: ${message}, Encrypted message: ${encryptedMessage}`
         );
@@ -246,28 +348,35 @@ socket.on("connect", () => {
                     //empty out the message box
                     $("#message").val("");
 
+                    // let decryptedMessage = CryptoJS.AES.decrypt(
+                    //     response.data.message,
+                    //     sharedKey.toString()
+                    // ).toString(CryptoJS.enc.Utf8);
+
+                    //---------------------
                     let decryptedMessage = CryptoJS.AES.decrypt(
                         response.data.message,
-                        sharedKey.toString()
+                        sharedKey
                     ).toString(CryptoJS.enc.Utf8);
+                    //---------------------
 
                     //show the decrypted message in the chat container
                     let chat = decryptedMessage;
-                    let html =` <div class="box" id="`+response.data._id+`">
+                    let html = ` <div class="box" id="` + response.data._id + `">
                                     <div class="receiver">
                                         <div class="recents">
                                             <div class="recent-img">
-                                                <img src="`+ 'http://localhost:3000/'+ sender_image +`" alt="sender profile picture" />
+                                                <img src="`+ 'http://localhost:3000/' + sender_image + `" alt="sender profile picture" />
                                             </div>
                                             <div class="recent-data">
                                                 <h3>
-                                                    `+ sender_name +`
+                                                    `+ sender_name + `
                                                 </h3>
                                                 <div class="msg">
                                                     <span>
-                                                        `+ decryptedMessage +` 
+                                                        `+ decryptedMessage + ` 
                                                     </span>
-                                                    <i class="fa-solid fa-trash" data-id="`+response.data._id+`"></i>
+                                                    <i class="fa-solid fa-trash" data-id="`+ response.data._id + `"></i>
                                                 </div>
                                             </div>
                                         </div>
@@ -297,29 +406,37 @@ socket.on("connect", () => {
 
     //Show chat at receivers' side.
     socket.on("by-server-to-receiver-chat-message", (data) => {
+        // let decryptedMessage = CryptoJS.AES.decrypt(
+        //     data.message,
+        //     sharedKey.toString()
+        // ).toString(CryptoJS.enc.Utf8);
+
+        //---------------------
         let decryptedMessage = CryptoJS.AES.decrypt(
             data.message,
-            sharedKey.toString()
+            sharedKey
         ).toString(CryptoJS.enc.Utf8);
-            let html =` <div class="box" id="`+data.messageId+`" >
+        //---------------------
+
+        let html = ` <div class="box" id="` + data.messageId + `" >
                         <div class="sender">
                             <div class="recents">
                                 <div class="recent-img">
-                                    <img src="`+ 'http://localhost:3000/'+ data.senderImage +`" alt="sender profile picture" />
+                                    <img src="`+ 'http://localhost:3000/' + data.senderImage + `" alt="sender profile picture" />
                                 </div>
                                 <div class="recent-data">
                                     <h3>
-                                        `+ data.senderName +`
+                                        `+ data.senderName + `
                                     </h3>
                                     <span>
-                                        `+ decryptedMessage +` 
+                                        `+ decryptedMessage + ` 
                                     </span>
                                 </div>
                             </div>
                         </div>
                     </div>`;
         $("#chat-container").append(html);
-        
+
         scrollChat();
     });
 
@@ -345,30 +462,38 @@ socket.on("connect", () => {
                 name = data.receiverName;
             }
 
+            // var decryptedMessage = CryptoJS.AES.decrypt(
+            //     chats[x]["message"].toString(),
+            //     sharedKey.toString()
+            // ).toString(CryptoJS.enc.Utf8);
+
+            //---------------------
             var decryptedMessage = CryptoJS.AES.decrypt(
                 chats[x]["message"].toString(),
-                sharedKey.toString()
+                sharedKey
             ).toString(CryptoJS.enc.Utf8);
+            //---------------------
+
             // console.log(`chat: ${(chats[x]['message']).toString()}, shared key: ${sharedKey.toString()}, message: ${decryptedMessage}`);
 
-            html +=`<div class="box" id="`+chats[x]["_id"]+`">
-                        <div class="`+addClass+`">
+            html += `<div class="box" id="` + chats[x]["_id"] + `">
+                        <div class="`+ addClass + `">
                             <div class="recents">
                                 <div class="recent-img">
-                                    <img src="`+ 'http://localhost:3000/'+ image +`" alt="sender profile picture" />
+                                    <img src="`+ 'http://localhost:3000/' + image + `" alt="sender profile picture" />
                                 </div>
                                 <div class="recent-data">
                                     <h3>
-                                        `+ name +`
+                                        `+ name + `
                                     </h3>
                                     <div class="msg">
                                         <span>
-                                            `+ decryptedMessage +`
+                                            `+ decryptedMessage + `
                                         </span>`;
-                                        if (chats[x]["sender_id"] == sender_id) {
-                                            html += `<i class="fa-solid fa-trash" data-id="`+chats[x]["_id"]+`"></i>`;
-                                        }
-            html +=`                </div>
+            if (chats[x]["sender_id"] == sender_id) {
+                html += `<i class="fa-solid fa-trash" data-id="` + chats[x]["_id"] + `"></i>`;
+            }
+            html += `                </div>
                                 </div>
                             </div>
                         </div>
@@ -379,33 +504,37 @@ socket.on("connect", () => {
     });
 
     //Delete chat at the senders' end
-    $(document).on('click', '.fa-trash', function(){
-        //get the message id to delete
-        var message_id = $(this).attr("data-id");
+    $(document).on('click', '.fa-trash', function () {
 
-        $.ajax({
-            url: '/delete-chat',
-            type: 'POST',
-            data: {id: message_id},
-            success:function(res){
-                if(res.success == true){
-                    $('#'+message_id).remove();
-
-                    socket.emit("by-sender-to-server-chat-deleted", {
-                        messageId: message_id,
-                        receiverDbId: receiver_id,
-                    });
+        const confirmed = confirm("Are you sure you want to delete this message?");
+        if (confirmed) {
+            //get the message id to delete
+            var message_id = $(this).attr("data-id");
+    
+            $.ajax({
+                url: '/delete-chat',
+                type: 'POST',
+                data: { id: message_id },
+                success: function (res) {
+                    if (res.success == true) {
+                        $('#' + message_id).remove();
+    
+                        socket.emit("by-sender-to-server-chat-deleted", {
+                            messageId: message_id,
+                            receiverDbId: receiver_id,
+                        });
+                    }
+                    else {
+                        alert(res.msg);
+                    }
                 }
-                else{
-                    alert(res.msg);
-                }
-            }
-        });
+            });
+        }
     })
 
     //Delete the chat at the receivers' end.
     socket.on("by-server-to-receiver-chat-deleted", (messageId) => {
-        $('#'+messageId).remove();
+        $('#' + messageId).remove();
     })
 });
 
@@ -423,10 +552,7 @@ function scrollChat() {
 
 function createKeys(p, g) {
     //Calculate the secret key
-    const secretKey = Math.floor(Math.random() * 1000) + 1;
-
-    // Calculate B = g^secretKey mod p
-    // const publicKey = Math.pow(g, secretKey) % p;
+    const secretKey = Math.floor(Math.random() * 10000) + 1;
 
     //Create a new Big.js instance with the base number g
     const base = new Big(g);
@@ -441,7 +567,7 @@ function createKeys(p, g) {
     const divisor = new Big(p);
     const remainder = num.mod(divisor);
 
-    //converting the exponential to whole number and generating public key
+    //converting the exponential to whole number and generating Public Key
     const num1 = new Big(remainder);
     const publicKey = num1.toFixed(0);
 
@@ -449,13 +575,18 @@ function createKeys(p, g) {
 }
 
 function createSharedKeys(mySecretKey, theirPublicKey, p) {
+    //Create a new Big.js instance with the base number g
     const base = new Big(theirPublicKey);
+
+    //calculate receiverPbk^senderSecretKey
     const result = base.pow(mySecretKey);
     const num = new Big(result.toString());
 
+    //calculate (receiverPbk^senderSecretKey)%p
     const divisor = new Big(p);
     const remainder = num.mod(divisor);
 
+    //converting the exponential to whole number and generating Shared Secret Key
     const num1 = new Big(remainder);
     const sharedSecretKey = num1.toFixed(0);
 

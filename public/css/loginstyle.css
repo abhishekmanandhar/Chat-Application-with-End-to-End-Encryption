@@ -39,6 +39,10 @@ body {
   margin-bottom: 20px;
 }
 
+.form .msg-para{
+  margin-bottom: 15px;
+}
+
 .form input {
   font-family: "Roboto", sans-serif;
   outline: 0;
