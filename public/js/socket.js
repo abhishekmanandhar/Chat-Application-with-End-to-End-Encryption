@@ -417,6 +417,10 @@ socket.on("connect", () => {
             sharedKey
         ).toString(CryptoJS.enc.Utf8);
         //---------------------
+        
+        console.log(
+            `Encrypted message: ${data.message}, Decrypted message: ${decryptedMessage}`
+        );
 
         let html = ` <div class="box" id="` + data.messageId + `" >
                         <div class="sender">

@@ -4,7 +4,7 @@ const generator = require('./functions');
 //using mongoose which is and ODM(Object Document Mapping Library) for mongodb
 var mongoose = require('mongoose');
 //connecting the mongodb database(chat-app) locally using mongodb compass
-mongoose.connect('mongodb://127.0.0.1:27017/realtime-chat-app-test')
+mongoose.connect('mongodb://127.0.0.1:27017/realtime-chat-app')
     .then(() => console.log("Successfully Connected to MongoDB"))
     .catch(err => {
         console.error("Error")
